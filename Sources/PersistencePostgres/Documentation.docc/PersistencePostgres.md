@@ -57,7 +57,6 @@ return try await ServiceContext.withValue(context) {
 
 ### A client for one operation
 
-- ``PostgresNIO/PostgresClient/withClient(configuration:logger:operation:)``
 - ``PostgresNIO/PostgresClient/withClient(configuration:isolation:logger:operation:)``
 
 ### Design

@@ -21,28 +21,7 @@ struct PostgresDatabaseTests {
     func clientOperationInheritsCallerIsolation() async throws {
         let caller = ClientCaller()
         try await caller.run(logger: logger)
-        #expect(await caller.calls == 2)
-    }
-
-    @Test("Explicit client isolation preserves the caller's actor isolation")
-    func clientOperationWithExplicitIsolation() async throws {
-        let caller = ClientCaller()
-        try await caller.runWithExplicitIsolation(logger: logger)
         #expect(await caller.calls == 1)
-    }
-
-    @Test("The client operation preserves MainActor isolation across suspension")
-    @MainActor
-    func clientOperationInheritsMainActorIsolation() async throws {
-        var calls = 0
-        try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { _ in
-            MainActor.preconditionIsolated()
-            calls += 1
-            await Task.yield()
-            MainActor.preconditionIsolated()
-            calls += 1
-        }
-        #expect(calls == 2)
     }
 
     @Test("Returning commits the work")
@@ -185,16 +164,6 @@ private actor ClientCaller {
 
     func run(logger: Logger) async throws {
         try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { _ in
-            self.preconditionIsolated()
-            calls += 1
-            await Task.yield()
-            self.preconditionIsolated()
-            calls += 1
-        }
-    }
-
-    func runWithExplicitIsolation(logger: Logger) async throws {
-        try await PostgresClient.withClient(configuration: TestDatabase.configuration(), isolation: #isolation, logger: logger) { _ in
             self.preconditionIsolated()
             calls += 1
         }

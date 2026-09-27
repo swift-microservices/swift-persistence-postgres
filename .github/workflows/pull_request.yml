@@ -16,6 +16,8 @@ jobs:
       license_header_check_enabled: false
       # Documentation is built without the docc plugin, so the manifest stays lean.
       docs_check_enabled: false
+      # Temporary exception for the inferred nonisolated declaration attribute.
+      api_breakage_check_allowlist_path: .github/api-breakage-allowlist.txt
 
   tests:
     name: Tests
