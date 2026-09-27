@@ -45,18 +45,24 @@ public struct PostgresDatabase<Scope: PostgresScope>: Database {
 
     /// Runs `operation` in a transaction configured for the current call.
     ///
+    /// The operation preserves the caller's actor isolation, including across suspension.
+    /// Other work on that actor may run while the operation is suspended. Database rollback
+    /// does not undo mutations to captured Swift state.
+    /// Finish all work using the scope before returning or throwing; its transaction-bound
+    /// repositories must not be retained for later use.
+    ///
     /// The settings are read from the `ServiceContext` as the transaction begins, because the
     /// caller differs from one call to the next while the database is built once at startup.
     ///
     /// `PostgresTransactionError` is unwrapped to the error that caused the rollback, so a use
     /// case catches the error its repository threw rather than a wrapper around it.
     public func withTransaction<T: Sendable>(
-        _ operation: @concurrent @Sendable (Scope) async throws -> T
+        _ operation: (Scope) async throws -> T
     ) async throws -> T {
         let settings = settings.merging(ServiceContext.current?.postgresSettings ?? [:])
 
         do {
-            return try await client.withTransaction(logger: logger) { connection in
+            return try await client.withTransaction(logger: logger, isolation: #isolation) { connection in
                 for (name, value) in settings.sorted {
                     try await connection.query(
                         "SELECT set_config(\(name), \(value), true)",

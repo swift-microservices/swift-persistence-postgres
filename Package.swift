@@ -27,7 +27,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/swift-microservices/swift-persistence.git", from: "0.1.0"),
+        .package(url: "https://github.com/swift-microservices/swift-persistence.git", from: "0.2.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.15.0"),
         .package(url: "https://github.com/apple/swift-service-context.git", from: "1.3.0"),
         .package(url: "https://github.com/vapor/postgres-nio.git", from: "1.33.0"),
@@ -47,6 +47,7 @@ let package = Package(
             name: "PersistencePostgresTests",
             dependencies: [
                 .target(name: "PersistencePostgres"),
+                .product(name: "Persistence", package: "swift-persistence"),
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "ServiceContextModule", package: "swift-service-context"),
                 .product(name: "PostgresNIO", package: "postgres-nio"),
