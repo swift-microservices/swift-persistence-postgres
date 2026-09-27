@@ -18,6 +18,12 @@ connection, begins a transaction, applies the settings for the call, builds the 
 connection, and hands it to the work. Returning commits; throwing rolls back and rethrows the same
 error, unwrapped.
 
+The transaction closure preserves the caller's actor isolation, including across suspension,
+so an actor can use its own state inside the closure.
+Other actor work may run during suspension, and database rollback does not undo in-memory
+mutations. Finish all work using the scope before returning or throwing; do not retain its
+transaction-bound repositories or use them from tasks that outlive the closure.
+
 ```swift
 struct PostgresPostsScope: PostgresScope, CreatePostUseCaseScope {
     let postRepository: any PostRepository

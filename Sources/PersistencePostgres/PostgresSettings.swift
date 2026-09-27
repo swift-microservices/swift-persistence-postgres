@@ -5,7 +5,7 @@
 //  Created by Zaid Rahhawi on 9/11/26.
 //
 
-import ServiceContextModule
+public import ServiceContextModule
 
 /// Configuration parameters a ``PostgresDatabase`` applies to each transaction it begins.
 ///

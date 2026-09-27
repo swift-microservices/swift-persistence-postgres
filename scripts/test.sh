@@ -12,7 +12,13 @@ fi
 PORT=${POSTGRES_PORT:-5498}
 export POSTGRES_HOST=127.0.0.1 POSTGRES_PORT=$PORT POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres POSTGRES_DB=postgres
 
-PG_BIN=$(ls -d /opt/homebrew/opt/postgresql@18/bin /usr/lib/postgresql/18/bin 2>/dev/null | head -1 || true)
+PG_BIN=
+for pg_bin_candidate in /opt/homebrew/opt/postgresql@18/bin /usr/lib/postgresql/18/bin; do
+  if [[ -d "$pg_bin_candidate" ]]; then
+    PG_BIN="$pg_bin_candidate"
+    break
+  fi
+done
 
 if [[ -n "$PG_BIN" ]]; then
   WORK=$(mktemp -d)

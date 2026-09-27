@@ -8,6 +8,13 @@ The Postgres driver for `Persistence`: transactions over a `PostgresClient`, wit
 borrows a connection, begins a transaction, applies the ``PostgresSettings`` for the call,
 builds the application's ``PostgresScope`` on that connection, and hands it to the work.
 
+The transaction closure preserves the caller's actor isolation, including across suspension,
+so an actor can read and update its own state inside the closure.
+Other work on that actor may run while the closure is suspended. Database rollback does not
+undo in-memory mutations. The scope and its transaction-bound repositories must not outlive the
+operation; finish all work using them before returning or throwing. `Sendable` does not extend
+their lifetime, and a nonescaping closure does not prevent its arguments from being retained.
+
 Repositories inside the scope use PostgresNIO directly. This package adds no query, row, or
 connection abstraction of its own; the driver's types are that layer.
 

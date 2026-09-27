@@ -5,8 +5,8 @@
 //  Created by Zaid Rahhawi on 9/11/26.
 //
 
-import Logging
-import PostgresNIO
+public import Logging
+public import PostgresNIO
 
 /// A scope a ``PostgresDatabase`` can build on a transaction's connection.
 ///

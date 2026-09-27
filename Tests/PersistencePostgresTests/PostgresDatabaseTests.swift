@@ -6,16 +6,53 @@
 //
 
 import Logging
+import Persistence
 import PersistencePostgres
 import PostgresNIO
 import ServiceContextModule
 import Testing
 
-@Suite(.enabled(if: TestDatabase.isConfigured, "Set POSTGRES_HOST to run against a Postgres; scripts/test.sh starts one."), .serialized)
+@Suite(.enabled(if: TestDatabase.isConfigured, "Set POSTGRES_HOST to run against a Postgres; scripts/test.sh starts one."), .serialized, .timeLimit(.minutes(1)))
 struct PostgresDatabaseTests {
     struct PostNotFound: Error, Equatable {}
 
     let logger = Logger(label: "test")
+
+    @Test("The client operation inherits the caller's actor isolation")
+    func clientOperationInheritsCallerIsolation() async throws {
+        let caller = ClientCaller()
+        try await caller.run(logger: logger)
+        #expect(await caller.calls == 1)
+    }
+
+    @Test("A transaction preserves the caller's actor isolation across a database query")
+    func transactionInheritsCallerIsolation() async throws {
+        let caller = TransactionCaller()
+        try await caller.run(logger: logger)
+        #expect(await caller.calls == 2)
+    }
+
+    @Test("A transaction preserves MainActor isolation across suspension")
+    @MainActor
+    func transactionInheritsMainActorIsolation() async throws {
+        let state = LocalState()
+        try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { client in
+            let database: any Database<ConnectionScope> = PostgresDatabase(client: client, logger: logger)
+
+            let result = try await database.withTransaction { scope in
+                MainActor.preconditionIsolated()
+                state.calls += 1
+                try await scope.connection.query("SELECT 1", logger: logger)
+                await Task.yield()
+                MainActor.preconditionIsolated()
+                state.calls += 1
+                return state.calls
+            }
+
+            #expect(result == 2)
+        }
+        #expect(state.calls == 2)
+    }
 
     @Test("Returning commits the work")
     func returningCommits() async throws {
@@ -42,24 +79,73 @@ struct PostgresDatabaseTests {
     }
 
     @Test("Throwing rolls the work back and rethrows the same error, unwrapped")
+    @MainActor
     func throwingRollsBack() async throws {
+        let state = LocalState()
         try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { client in
-            let database = PostgresDatabase<ConnectionScope>(client: client, logger: logger)
+            let database: any Database<ConnectionScope> = PostgresDatabase(client: client, logger: logger)
             let table = "rollbacks_\(UInt32.random(in: 0...UInt32.max))"
 
             await #expect(throws: PostNotFound()) {
                 try await database.withTransaction { scope in
+                    MainActor.preconditionIsolated()
+                    state.calls += 1
                     try await scope.connection.query("CREATE TABLE \(unescaped: table) (title TEXT)", logger: logger)
+                    MainActor.preconditionIsolated()
+                    state.calls += 1
                     throw PostNotFound()
                 }
             }
 
             let exists = try await database.withTransaction { scope in
-                try await scope.connection.query("SELECT to_regclass(\(table)) IS NOT NULL", logger: logger)
-                    .decode(Bool.self)
-                    .reduce(into: [Bool]()) { $0.append($1) }
+                let rows = try await scope.connection.query("SELECT to_regclass(\(table)) IS NOT NULL", logger: logger)
+                var exists: [Bool] = []
+                for try await value in rows.decode(Bool.self) {
+                    exists.append(value)
+                }
+                return exists
             }
             #expect(exists == [false])
+            #expect(state.calls == 2)
+        }
+    }
+
+    @Test("Cancellation rolls back work and clears settings before the connection is reused")
+    func cancellationRollsBack() async throws {
+        try await PostgresClient.withClient(configuration: TestDatabase.configuration(maximumConnections: 1), logger: logger) { client in
+            let database: any Database<ConnectionScope> = PostgresDatabase(client: client, logger: logger)
+            let table = "cancelled_\(UInt32.random(in: 0...UInt32.max))"
+            let (started, continuation) = AsyncStream<Void>.makeStream(bufferingPolicy: .bufferingNewest(1))
+
+            let transaction = Task {
+                defer { continuation.finish() }
+                var context = ServiceContext.topLevel
+                context.postgresSettings = ["app.caller_user_id": "cancelled-caller"]
+                try await ServiceContext.withValue(context) {
+                    try await database.withTransaction { scope in
+                        #expect(try await scope.setting("app.caller_user_id") == "cancelled-caller")
+                        try await scope.connection.query("CREATE TABLE \(unescaped: table) (title TEXT)", logger: logger)
+                        continuation.yield(())
+                        try await Task.sleep(for: .seconds(60))
+                    }
+                }
+            }
+            defer { transaction.cancel() }
+
+            // Cancel only after the transaction has performed a write. Finishing the stream
+            // also releases this wait if setup fails before the signal.
+            for await _ in started { break }
+            transaction.cancel()
+            await #expect(throws: CancellationError.self) { try await transaction.value }
+
+            let (exists, setting) = try await database.withTransaction { scope in
+                let exists = try await scope.connection.query("SELECT to_regclass(\(table)) IS NOT NULL", logger: logger)
+                    .decode(Bool.self)
+                    .reduce(into: [Bool]()) { $0.append($1) }
+                return (exists, try await scope.setting("app.caller_user_id"))
+            }
+            #expect(exists == [false])
+            #expect(setting == nil)
         }
     }
 
@@ -150,4 +236,46 @@ struct PostgresDatabaseTests {
             #expect(sawOwnRow == [1])
         }
     }
+}
+
+private actor ClientCaller {
+    private(set) var calls = 0
+
+    func run(logger: Logger) async throws {
+        try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { _ in
+            self.preconditionIsolated()
+            calls += 1
+        }
+    }
+}
+
+private actor TransactionCaller {
+    private let state = LocalState()
+
+    var calls: Int { state.calls }
+
+    func run(logger: Logger) async throws {
+        try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { client in
+            let database: any Database<ConnectionScope> = PostgresDatabase(client: client, logger: logger)
+
+            let values = try await database.withTransaction { scope in
+                self.preconditionIsolated()
+                state.calls += 1
+                let values = try await scope.connection.query("SELECT 1", logger: logger)
+                    .decode(Int.self)
+                    .reduce(into: [Int]()) { $0.append($1) }
+                await Task.yield()
+                self.preconditionIsolated()
+                state.calls += 1
+                return values
+            }
+
+            #expect(values == [1])
+        }
+    }
+}
+
+/// Intentionally non-Sendable to verify actor-local reference captures.
+private final class LocalState {
+    var calls = 0
 }
