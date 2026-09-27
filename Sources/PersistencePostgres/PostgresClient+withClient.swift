@@ -25,13 +25,36 @@ extension PostgresClient {
     /// ```
     public static func withClient<T: Sendable>(
         configuration: PostgresClient.Configuration,
+        logger: Logger,
+        operation: (PostgresClient) async throws -> T
+    ) async throws -> T {
+        let client = PostgresClient(configuration: configuration, backgroundLogger: logger)
+
+        return try await withRunningClient(client, isolation: #isolation, operation: operation)
+    }
+
+    /// Runs `operation` with a client that lives exactly that long, using the supplied isolation.
+    /// Prefer ``withClient(configuration:logger:operation:)`` to inherit the caller's isolation.
+    public static func withClient<T: Sendable>(
+        configuration: PostgresClient.Configuration,
         isolation: isolated (any Actor)? = #isolation,
         logger: Logger,
         operation: (PostgresClient) async throws -> T
     ) async throws -> T {
         let client = PostgresClient(configuration: configuration, backgroundLogger: logger)
 
-        return try await withThrowingTaskGroup { group in
+        return try await withRunningClient(client, isolation: isolation, operation: operation)
+    }
+
+    private static func withRunningClient<T: Sendable>(
+        _ client: PostgresClient,
+        isolation: isolated (any Actor)?,
+        operation: (PostgresClient) async throws -> T
+    ) async throws -> T {
+        return try await withThrowingTaskGroup(of: Void.self, isolation: isolation) { group in
+            // Capture the isolated parameter so the group body inherits its actor isolation.
+            _ = isolation
+
             group.addTask {
                 await client.run()
             }
