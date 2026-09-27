@@ -17,6 +17,13 @@ struct PostgresDatabaseTests {
 
     let logger = Logger(label: "test")
 
+    @Test("The client operation inherits the caller's actor isolation")
+    func clientOperationInheritsCallerIsolation() async throws {
+        let caller = ClientCaller()
+        try await caller.run(logger: logger)
+        #expect(await caller.calls == 1)
+    }
+
     @Test("Returning commits the work")
     func returningCommits() async throws {
         try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { client in
@@ -148,6 +155,17 @@ struct PostgresDatabaseTests {
                     .reduce(into: [Int]()) { $0.append($1) }
             }
             #expect(sawOwnRow == [1])
+        }
+    }
+}
+
+private actor ClientCaller {
+    private(set) var calls = 0
+
+    func run(logger: Logger) async throws {
+        try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { _ in
+            self.preconditionIsolated()
+            calls += 1
         }
     }
 }

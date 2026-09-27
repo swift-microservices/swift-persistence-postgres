@@ -5,9 +5,9 @@
 //  Created by Zaid Rahhawi on 9/11/26.
 //
 
-import Logging
-import Persistence
-import PostgresNIO
+public import Logging
+public import Persistence
+public import PostgresNIO
 import ServiceContextModule
 
 /// A `Database` over a `PostgresClient` connection pool.
@@ -51,7 +51,7 @@ public struct PostgresDatabase<Scope: PostgresScope>: Database {
     /// `PostgresTransactionError` is unwrapped to the error that caused the rollback, so a use
     /// case catches the error its repository threw rather than a wrapper around it.
     public func withTransaction<T: Sendable>(
-        _ operation: @Sendable (Scope) async throws -> T
+        _ operation: @concurrent @Sendable (Scope) async throws -> T
     ) async throws -> T {
         let settings = settings.merging(ServiceContext.current?.postgresSettings ?? [:])
 
