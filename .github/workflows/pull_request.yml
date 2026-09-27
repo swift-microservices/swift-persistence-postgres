@@ -16,14 +16,6 @@ jobs:
       license_header_check_enabled: false
       # Documentation is built without the docc plugin, so the manifest stays lean.
       docs_check_enabled: false
-      # Accept the intentional transaction isolation migration; check all other API changes.
-      api_breakage_check_allowlist_path: .github/api-breakage-allowlist.txt
-      # Only the historical baseline uses 0.1.0; this PR still builds with Persistence 0.2.0.
-      # Future base commits are compared unchanged by the preparation script.
-      linux_pre_build_command: |
-        git fetch origin "${GITHUB_BASE_REF}"
-        API_BREAKAGE_CHECK_BASELINE=$(bash scripts/api-baseline.sh FETCH_HEAD)
-        export API_BREAKAGE_CHECK_BASELINE
 
   tests:
     name: Tests
