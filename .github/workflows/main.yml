@@ -16,8 +16,8 @@ jobs:
 
   static-sdk:
     name: Static Linux Swift SDK
-    uses: apple/swift-nio/.github/workflows/static_sdk.yml@main
+    uses: apple/swift-nio/.github/workflows/static_sdk.yml@21de5f08c1a166a6dd293d0e587ad977bf8dac5d  # 2.103.0
 
   release-builds:
     name: Release builds
-    uses: apple/swift-nio/.github/workflows/release_builds.yml@main
+    uses: apple/swift-nio/.github/workflows/release_builds.yml@21de5f08c1a166a6dd293d0e587ad977bf8dac5d  # 2.103.0
