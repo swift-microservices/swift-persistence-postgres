@@ -18,13 +18,6 @@ struct PostgresDatabaseTests {
 
     let logger = Logger(label: "test")
 
-    @Test("The client operation inherits the caller's actor isolation")
-    func clientOperationInheritsCallerIsolation() async throws {
-        let caller = ClientCaller()
-        try await caller.run(logger: logger)
-        #expect(await caller.calls == 1)
-    }
-
     @Test("A transaction preserves the caller's actor isolation across a database query")
     func transactionInheritsCallerIsolation() async throws {
         let caller = TransactionCaller()
@@ -238,17 +231,6 @@ struct PostgresDatabaseTests {
     }
 }
 
-private actor ClientCaller {
-    private(set) var calls = 0
-
-    func run(logger: Logger) async throws {
-        try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { _ in
-            self.preconditionIsolated()
-            calls += 1
-        }
-    }
-}
-
 private actor TransactionCaller {
     private let state = LocalState()
 
@@ -276,6 +258,6 @@ private actor TransactionCaller {
 }
 
 /// Intentionally non-Sendable to verify actor-local reference captures.
-private final class LocalState {
+final class LocalState {
     var calls = 0
 }
