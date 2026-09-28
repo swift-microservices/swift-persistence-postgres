@@ -4,7 +4,7 @@ The Postgres driver for [swift-persistence](https://github.com/swift-microservic
 transactions over a `PostgresClient`, with per-transaction settings for row-level security.
 
 ```swift
-.package(url: "https://github.com/swift-microservices/swift-persistence-postgres.git", from: "0.1.0"),
+.package(url: "https://github.com/swift-microservices/swift-persistence-postgres.git", from: "0.2.0"),
 ```
 
 ```swift
