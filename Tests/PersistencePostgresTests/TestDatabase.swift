@@ -5,10 +5,15 @@
 //  Created by Zaid Rahhawi on 9/11/26.
 //
 
-import Foundation
 import Logging
 import PersistencePostgres
 import PostgresNIO
+
+#if canImport(FoundationEssentials)
+import FoundationEssentials
+#else
+import Foundation
+#endif
 
 /// The Postgres the tests run against, named by `POSTGRES_HOST`, `POSTGRES_PORT`,
 /// `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`. `scripts/test.sh` starts one.
