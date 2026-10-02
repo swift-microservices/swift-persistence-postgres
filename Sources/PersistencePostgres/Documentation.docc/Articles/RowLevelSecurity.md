@@ -10,7 +10,7 @@ statement sees, and the policy can read the tenant from a configuration paramete
 
 ```sql
 CREATE POLICY posts_by_author ON posts
-    USING (author_id = current_setting('app.caller_user_id', true)::uuid);
+    USING (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid);
 ```
 
 That is all a policy should decide. Whether a caller is an administrator, and what they may do,
@@ -33,9 +33,9 @@ task's `ServiceContext`, beside whatever identity it already binds there, and ev
 begun under that task reads it:
 
 ```swift
-var context = ServiceContext.current ?? .topLevel
-context.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
-return try await ServiceContext.withValue(context) {
+var serviceContext = ServiceContext.current ?? .topLevel
+serviceContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
+return try await ServiceContext.withValue(serviceContext) {
     try await next(request, context)
 }
 ```
