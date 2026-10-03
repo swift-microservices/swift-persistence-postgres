@@ -1,5 +1,7 @@
 # swift-persistence-postgres
 
+[![Documentation](https://img.shields.io/badge/docc-read_documentation-blue)](https://swiftpackageindex.com/swift-microservices/swift-persistence-postgres/documentation)
+
 The Postgres driver for [swift-persistence](https://github.com/swift-microservices/swift-persistence):
 transactions over a `PostgresClient`, with per-transaction settings for row-level security.
 
