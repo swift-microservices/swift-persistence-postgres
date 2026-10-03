@@ -20,6 +20,9 @@ jobs:
           - name: "6.3 Noble"
             image: "swift:6.3-noble"
             arguments: "-Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable"
+          - name: "6.4 Resolute"
+            image: "swift:6.4-resolute"
+            arguments: "-Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable"
           - name: "nightly-next Noble"
             image: "swiftlang/swift:nightly-6.4.x-noble"
             arguments: "--explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable"
@@ -34,7 +37,7 @@ jobs:
         env:
           POSTGRES_PASSWORD: postgres
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -h 127.0.0.1 -U postgres -d postgres"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -46,7 +49,7 @@ jobs:
       POSTGRES_DB: postgres
     steps:
       - name: Checkout repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
       - name: Swift version

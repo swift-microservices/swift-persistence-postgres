@@ -1,9 +1,6 @@
-//
-//  PostgresDatabaseTests.swift
-//  swift-persistence-postgres
-//
-//  Created by Zaid Rahhawi on 9/11/26.
-//
+// Copyright (c) 2026 Zaid Rahhawi
+// SPDX-License-Identifier: MIT
+// See LICENSE for license information.
 
 import Logging
 import Persistence
@@ -12,7 +9,11 @@ import PostgresNIO
 import ServiceContextModule
 import Testing
 
-@Suite(.enabled(if: TestDatabase.isConfigured, "Set POSTGRES_HOST to run against a Postgres; scripts/test.sh starts one."), .serialized, .timeLimit(.minutes(1)))
+@Suite(
+    .enabled(if: TestDatabase.isConfigured, "Set POSTGRES_HOST to run against a Postgres; scripts/test.sh starts one."),
+    .serialized,
+    .timeLimit(.minutes(1))
+)
 struct PostgresDatabaseTests {
     struct PostNotFound: Error, Equatable {}
 

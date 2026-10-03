@@ -1,4 +1,7 @@
 #!/bin/bash
+## Copyright (c) 2026 Zaid Rahhawi
+## SPDX-License-Identifier: MIT
+## See LICENSE for license information.
 # Runs the test suite against an ephemeral Postgres.
 #
 # Uses a Homebrew PostgreSQL 18 if one is installed, otherwise a `postgres:18` container through
@@ -33,9 +36,31 @@ else
   "$RUNTIME" run -d --name "$NAME" -e POSTGRES_PASSWORD=postgres -p "$PORT:5432" postgres:18 >/dev/null
 fi
 
-for _ in $(seq 1 60); do
-  (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null && break
-  sleep 0.5
+database_ready() {
+  if [[ -n "$PG_BIN" ]]; then
+    "$PG_BIN/pg_isready" -h "$POSTGRES_HOST" -p "$PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1
+  else
+    "$RUNTIME" exec "$NAME" pg_isready -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1
+  fi
+}
+
+ready=false
+for _ in $(seq 1 120); do
+  if database_ready; then
+    ready=true
+    break
+  fi
+  sleep 1
 done
+
+if [[ "$ready" != true ]]; then
+  echo "PostgreSQL did not accept TCP connections within 120 seconds." >&2
+  if [[ -n "$PG_BIN" ]]; then
+    cat "$WORK/pg.log" >&2
+  else
+    "$RUNTIME" logs "$NAME" >&2
+  fi
+  exit 1
+fi
 
 swift test --parallel "$@"

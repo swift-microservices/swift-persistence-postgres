@@ -1,9 +1,6 @@
-//
-//  PostgresSettings.swift
-//  swift-persistence-postgres
-//
-//  Created by Zaid Rahhawi on 9/11/26.
-//
+// Copyright (c) 2026 Zaid Rahhawi
+// SPDX-License-Identifier: MIT
+// See LICENSE for license information.
 
 public import ServiceContextModule
 
@@ -50,7 +47,9 @@ public struct PostgresSettings: Sendable, Hashable, ExpressibleByDictionaryLiter
         values.isEmpty
     }
 
-    /// These settings with `other` applied over them. Where both set a parameter, `other` wins.
+    /// These settings with `other` applied over them.
+    ///
+    /// Where both set a parameter, `other` wins.
     public func merging(_ other: PostgresSettings) -> PostgresSettings {
         PostgresSettings(values.merging(other.values, uniquingKeysWith: { $1 }))
     }
