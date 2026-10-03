@@ -1,9 +1,6 @@
-//
-//  TestDatabase.swift
-//  swift-persistence-postgres
-//
-//  Created by Zaid Rahhawi on 9/11/26.
-//
+// Copyright (c) 2026 Zaid Rahhawi
+// SPDX-License-Identifier: MIT
+// See LICENSE for license information.
 
 import Logging
 import PersistencePostgres
@@ -15,8 +12,10 @@ import FoundationEssentials
 import Foundation
 #endif
 
-/// The Postgres the tests run against, named by `POSTGRES_HOST`, `POSTGRES_PORT`,
-/// `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`. `scripts/test.sh` starts one.
+/// The PostgreSQL instance configured for the tests.
+///
+/// Connection settings come from `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`,
+/// `POSTGRES_PASSWORD`, and `POSTGRES_DB`. `scripts/test.sh` starts an instance.
 enum TestDatabase {
     static var isConfigured: Bool {
         ProcessInfo.processInfo.environment["POSTGRES_HOST"] != nil

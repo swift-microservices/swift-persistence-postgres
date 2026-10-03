@@ -6,8 +6,6 @@ permissions:
 on:
   push:
     branches: [main]
-  schedule:
-    - cron: "0 8 * * 1"
 
 jobs:
   tests:
@@ -16,11 +14,11 @@ jobs:
 
   static-sdk:
     name: Static Linux Swift SDK
-    uses: apple/swift-nio/.github/workflows/static_sdk.yml@d09ffc8ad6437bc278897279e33150d8e39ee3d5  # main as of 2026-10-03; includes Swift 6.4 inputs
+    uses: apple/swift-nio/.github/workflows/static_sdk.yml@main
 
   release-builds:
     name: Release builds
-    uses: apple/swift-nio/.github/workflows/release_builds.yml@d09ffc8ad6437bc278897279e33150d8e39ee3d5  # main as of 2026-10-03; includes Swift 6.4 inputs
+    uses: apple/swift-nio/.github/workflows/release_builds.yml@main
     with:
       minimum_swift_version: "6.3"
       linux_6_2_enabled: false

@@ -1,4 +1,7 @@
 #!/bin/bash
+## Copyright (c) 2026 Zaid Rahhawi
+## SPDX-License-Identifier: MIT
+## See LICENSE for license information.
 # Runs the test suite against an ephemeral Postgres.
 #
 # Uses a Homebrew PostgreSQL 18 if one is installed, otherwise a `postgres:18` container through
