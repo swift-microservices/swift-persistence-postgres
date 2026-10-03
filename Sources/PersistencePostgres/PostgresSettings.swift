@@ -50,7 +50,9 @@ public struct PostgresSettings: Sendable, Hashable, ExpressibleByDictionaryLiter
         values.isEmpty
     }
 
-    /// These settings with `other` applied over them. Where both set a parameter, `other` wins.
+    /// These settings with `other` applied over them.
+    ///
+    /// Where both set a parameter, `other` wins.
     public func merging(_ other: PostgresSettings) -> PostgresSettings {
         PostgresSettings(values.merging(other.values, uniquingKeysWith: { $1 }))
     }

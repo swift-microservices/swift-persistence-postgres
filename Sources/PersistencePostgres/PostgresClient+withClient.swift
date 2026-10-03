@@ -10,8 +10,9 @@ public import PostgresNIO
 
 extension PostgresClient {
     /// Runs `operation` with a client that lives exactly that long: started in a task group and
-    /// cancelled when the operation returns or throws. Queries lease connections from the pool
-    /// and wait for one, so nothing warms up before the first query.
+    /// cancelled when the operation returns or throws.
+    ///
+    /// Queries lease connections from the pool and wait for one, so nothing warms up before the first query.
     /// The operation preserves its actor isolation, so a closure formed by the caller can use
     /// the caller's actor-local state.
     ///
