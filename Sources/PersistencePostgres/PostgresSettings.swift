@@ -32,6 +32,8 @@ public struct PostgresSettings: Sendable, Hashable, ExpressibleByDictionaryLiter
         self.values = values
     }
 
+    /// Settings from a dictionary literal of parameter names to values; a repeated name keeps the
+    /// last value.
     public init(dictionaryLiteral elements: (String, String)...) {
         self.values = Dictionary(elements, uniquingKeysWith: { $1 })
     }
@@ -74,9 +76,9 @@ extension ServiceContext {
     /// Bind them where the caller becomes known:
     ///
     /// ```swift
-    /// var context = ServiceContext.current ?? .topLevel
-    /// context.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
-    /// return try await ServiceContext.withValue(context) {
+    /// var serviceContext = ServiceContext.current ?? .topLevel
+    /// serviceContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
+    /// return try await ServiceContext.withValue(serviceContext) {
     ///     try await next(request, context)
     /// }
     /// ```

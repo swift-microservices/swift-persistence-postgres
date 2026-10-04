@@ -6,7 +6,7 @@ The Postgres driver for [swift-persistence](https://github.com/swift-microservic
 transactions over a `PostgresClient`, with per-transaction settings for row-level security.
 
 ```swift
-.package(url: "https://github.com/swift-microservices/swift-persistence-postgres.git", from: "0.2.0"),
+.package(url: "https://github.com/swift-microservices/swift-persistence-postgres.git", from: "0.2.1"),
 ```
 
 ```swift
@@ -56,19 +56,23 @@ calling, are bound in the task's `ServiceContext` where the caller becomes known
 transaction begun under that task reads them:
 
 ```swift
-var context = ServiceContext.current ?? .topLevel
-context.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
-return try await ServiceContext.withValue(context) {
+var serviceContext = ServiceContext.current ?? .topLevel
+serviceContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
+return try await ServiceContext.withValue(serviceContext) {
     try await next(request, context)
 }
 ```
 
-A row-level security policy then reads the caller back:
+A row-level security policy then reads the caller back, for reads and for writes:
 
 ```sql
 CREATE POLICY posts_by_author ON posts
-    USING (author_id = current_setting('app.caller_user_id', true)::uuid);
+    USING (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid)
+    WITH CHECK (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid);
 ```
+
+`NULLIF` matters: once a pooled connection has carried the setting, reading it in a later
+transaction yields `''` rather than `NULL`, and `''::uuid` is an error rather than a non-match.
 
 ## A client for one operation
 
@@ -84,12 +88,14 @@ try await PostgresClient.withClient(configuration: configuration, logger: logger
 
 ## Requirements
 
-Swift 6.3, macOS 15 or Linux, PostgreSQL 14 or later.
+Swift 6.3, macOS 15 or Linux. PostgresNIO 1.33.1, swift-persistence 0.2. Tested against
+PostgreSQL 18.
 
 ## Development
 
-The tests run against a real Postgres named by `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_USER`,
-`POSTGRES_PASSWORD`, and `POSTGRES_DB`, and skip when `POSTGRES_HOST` is unset.
+The database tests run against a real Postgres named by `POSTGRES_HOST`, `POSTGRES_PORT`,
+`POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`, and fail when `POSTGRES_HOST` is unset:
+a driver test with no database proves nothing. `scripts/test.sh` provides one.
 
 ```sh
 scripts/test.sh                                          # starts an ephemeral Postgres, runs swift test, stops it

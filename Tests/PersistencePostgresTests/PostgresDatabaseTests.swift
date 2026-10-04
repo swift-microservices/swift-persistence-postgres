@@ -10,7 +10,7 @@ import ServiceContextModule
 import Testing
 
 @Suite(
-    .enabled(if: TestDatabase.isConfigured, "Set POSTGRES_HOST to run against a Postgres; scripts/test.sh starts one."),
+    .requiresDatabase,
     .serialized,
     .timeLimit(.minutes(1))
 )

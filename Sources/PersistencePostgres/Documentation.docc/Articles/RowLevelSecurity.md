@@ -5,13 +5,17 @@ Binding the tenant to the transaction so that policies can isolate it.
 ## Policies isolate tenants
 
 Postgres row-level security is tenant isolation: a policy on a table decides which rows a
-statement sees, and the policy can read the tenant from a configuration parameter with
-`current_setting`:
+statement sees and writes, and the policy can read the tenant from a configuration parameter
+with `current_setting`, in both `USING` and `WITH CHECK`:
 
 ```sql
 CREATE POLICY posts_by_author ON posts
-    USING (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid);
+    USING (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid)
+    WITH CHECK (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid);
 ```
+
+`NULLIF` matters: once a pooled connection has carried the setting, reading it in a later
+transaction yields `''` rather than `NULL`, and `''::uuid` is an error rather than a non-match.
 
 That is all a policy should decide. Whether a caller is an administrator, and what they may do,
 is a rule about the application and belongs in the use case, never in a policy: a policy that
