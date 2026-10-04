@@ -25,6 +25,8 @@ public struct PostgresDatabase<Scope: PostgresScope>: Database {
     private let settings: PostgresSettings
     private let logger: Logger
 
+    /// A database that runs each unit of work in a transaction on a connection from `client`.
+    ///
     /// - Parameters:
     ///   - client: The connection pool to borrow from.
     ///   - settings: Parameters applied to every transaction. Settings bound in the task's

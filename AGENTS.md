@@ -26,10 +26,14 @@ This package is the Postgres driver for swift-persistence. Read this before chan
 
 - Swift 6.3, strict concurrency, `Sendable` everywhere it is meaningful.
 - Logger is the last parameter of every initializer and has no default.
-- Tests use Swift Testing and run against a real Postgres; `scripts/test.sh` starts one. Every
-  behaviour the database promises has a test: commit on return, rollback and unwrapped rethrow on
-  throw, settings visible inside and gone after commit and rollback, constant and context
-  settings merged with context winning, scope built on the transaction's connection.
+- Tests use Swift Testing and run against a real Postgres; `scripts/test.sh` starts one. The
+  database suite fails, rather than skips, when `POSTGRES_HOST` is unset. Every behaviour the
+  database promises has a test: caller isolation from an actor and from `@MainActor` across a
+  query, commit on return, rollback and unwrapped rethrow on throw, rollback and cleared settings
+  on cancellation, settings visible inside and gone after commit and rollback, constant and
+  context settings merged with context winning, scope built on the transaction's connection.
+- `withClient` is proven without a server: caller isolation, a thrown error stopping the client
+  and reaching the caller, and cancellation stopping the client.
 - Doc comments on every public declaration; the DocC catalog is the long-form explanation.
 - Use the checked-in `.swift-format`, copied exactly from apple/swift-temporal-sdk at
   `508797b5468dbc532f77c317bf9df0cb3231f5c1`: four-space indentation, 150-column lines,

@@ -5,6 +5,7 @@
 import Logging
 import PersistencePostgres
 import PostgresNIO
+import Testing
 
 #if canImport(FoundationEssentials)
 import FoundationEssentials
@@ -36,6 +37,29 @@ enum TestDatabase {
         }
         return configuration
     }
+}
+
+/// Fails each test of a suite that needs PostgreSQL when none is configured, rather than
+/// skipping it: a driver test with no database proves nothing.
+struct RequiresDatabaseTrait: SuiteTrait, TestTrait, TestScoping {
+    var isRecursive: Bool { true }
+
+    func provideScope(
+        for test: Test,
+        testCase: Test.Case?,
+        performing function: @concurrent @Sendable () async throws -> Void
+    ) async throws {
+        guard test.isSuite || TestDatabase.isConfigured else {
+            Issue.record("Set POSTGRES_HOST to run against a Postgres; scripts/test.sh starts one.")
+            return
+        }
+        try await function()
+    }
+}
+
+extension Trait where Self == RequiresDatabaseTrait {
+    /// Fails, rather than skips, each test when `POSTGRES_HOST` is unset.
+    static var requiresDatabase: Self { Self() }
 }
 
 /// The scope under test: the transaction's connection, so a test can query inside it.
