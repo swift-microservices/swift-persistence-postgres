@@ -3,10 +3,10 @@
 // See LICENSE for license information.
 
 import Logging
+import OperationContext
 import Persistence
 import PersistencePostgres
 import PostgresNIO
-import ServiceContextModule
 import Testing
 
 @Suite(
@@ -113,9 +113,9 @@ struct PostgresDatabaseTests {
 
             let transaction = Task {
                 defer { continuation.finish() }
-                var context = ServiceContext.topLevel
+                var context = OperationContext()
                 context.postgresSettings = ["app.caller_user_id": "cancelled-caller"]
-                try await ServiceContext.withValue(context) {
+                try await OperationContext.withContext(context) {
                     try await database.withTransaction { scope in
                         #expect(try await scope.setting("app.caller_user_id") == "cancelled-caller")
                         try await scope.connection.query("CREATE TABLE \(unescaped: table) (title TEXT)", logger: logger)
@@ -143,15 +143,15 @@ struct PostgresDatabaseTests {
         }
     }
 
-    @Test("Settings bound in the ServiceContext are visible inside the transaction")
+    @Test("Settings bound in the OperationContext are visible inside the transaction")
     func contextSettingsApply() async throws {
         try await PostgresClient.withClient(configuration: TestDatabase.configuration(), logger: logger) { client in
             let database = PostgresDatabase<ConnectionScope>(client: client, logger: logger)
 
-            var context = ServiceContext.topLevel
+            var context = OperationContext()
             context.postgresSettings = ["app.caller_user_id": "user-1"]
 
-            let value = try await ServiceContext.withValue(context) {
+            let value = try await OperationContext.withContext(context) {
                 try await database.withTransaction { scope in
                     try await scope.setting("app.caller_user_id")
                 }
@@ -165,10 +165,10 @@ struct PostgresDatabaseTests {
         // One connection in the pool, so every transaction reuses the one that was configured.
         try await PostgresClient.withClient(configuration: TestDatabase.configuration(maximumConnections: 1), logger: logger) { client in
             let database = PostgresDatabase<ConnectionScope>(client: client, logger: logger)
-            var context = ServiceContext.topLevel
+            var context = OperationContext()
             context.postgresSettings = ["app.caller_user_id": "user-1"]
 
-            try await ServiceContext.withValue(context) {
+            try await OperationContext.withContext(context) {
                 try await database.withTransaction { _ in }
             }
             let afterCommit = try await database.withTransaction { scope in
@@ -177,7 +177,7 @@ struct PostgresDatabaseTests {
             #expect(afterCommit == nil)
 
             await #expect(throws: PostNotFound()) {
-                try await ServiceContext.withValue(context) {
+                try await OperationContext.withContext(context) {
                     try await database.withTransaction { _ in throw PostNotFound() }
                 }
             }
@@ -203,9 +203,9 @@ struct PostgresDatabaseTests {
             #expect(unbound.0 == "anonymous")
             #expect(unbound.1 == "tests")
 
-            var context = ServiceContext.topLevel
+            var context = OperationContext()
             context.postgresSettings = ["app.caller_role": "user"]
-            let bound = try await ServiceContext.withValue(context) {
+            let bound = try await OperationContext.withContext(context) {
                 try await database.withTransaction { scope in
                     (try await scope.setting("app.caller_role"), try await scope.setting("application_name"))
                 }

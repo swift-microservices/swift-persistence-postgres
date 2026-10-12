@@ -5,9 +5,9 @@ This package is the Postgres driver for swift-persistence. Read this before chan
 ## What this package is
 
 - One product, `PersistencePostgres`: `PostgresDatabase`, `PostgresScope`, `PostgresSettings`,
-  the `ServiceContext` key the settings are bound under, and `PostgresClient.withClient` for a
+  the `OperationContext` key the settings are bound under, and `PostgresClient.withClient` for a
   client that lives as long as one operation.
-- It depends on swift-persistence by tag, PostgresNIO, swift-log, and swift-service-context.
+- It depends on swift-persistence by tag, PostgresNIO, swift-log, and swift-operation-context.
   Nothing else.
 - Every unit of work is a transaction. Settings are applied with `set_config(name, value, true)`
   and are therefore transaction-local.
@@ -18,7 +18,7 @@ This package is the Postgres driver for swift-persistence. Read this before chan
   transaction-local by design; a session-scoped caller on a pooled connection would leak to the
   next borrower.
 - Query, row, or connection abstractions. PostgresNIO's types are that layer.
-- Knowledge of what a caller is. The application binds `ServiceContext.postgresSettings` where it
+- Knowledge of what a caller is. The application binds `OperationContext.postgresSettings` where it
   establishes the caller; this package only reads them.
 - Migrations, pool configuration, TLS. Those are the composition root's.
 

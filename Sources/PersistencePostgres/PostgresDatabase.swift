@@ -3,9 +3,9 @@
 // See LICENSE for license information.
 
 public import Logging
+import OperationContext
 public import Persistence
 public import PostgresNIO
-import ServiceContextModule
 
 /// A `Database` over a `PostgresClient` connection pool.
 ///
@@ -30,7 +30,7 @@ public struct PostgresDatabase<Scope: PostgresScope>: Database {
     /// - Parameters:
     ///   - client: The connection pool to borrow from.
     ///   - settings: Parameters applied to every transaction. Settings bound in the task's
-    ///     `ServiceContext` are applied over these.
+    ///     `OperationContext` are applied over these.
     ///   - logger: Passed to every query, and to each scope this database builds.
     public init(
         client: PostgresClient,
@@ -50,7 +50,7 @@ public struct PostgresDatabase<Scope: PostgresScope>: Database {
     /// Finish all work using the scope before returning or throwing; its transaction-bound
     /// repositories must not be retained for later use.
     ///
-    /// The settings are read from the `ServiceContext` as the transaction begins, because the
+    /// The settings are read from the `OperationContext` as the transaction begins, because the
     /// caller differs from one call to the next while the database is built once at startup.
     ///
     /// `PostgresTransactionError` is unwrapped to the error that caused the rollback, so a use
@@ -58,7 +58,7 @@ public struct PostgresDatabase<Scope: PostgresScope>: Database {
     public func withTransaction<T: Sendable>(
         _ operation: (Scope) async throws -> T
     ) async throws -> T {
-        let settings = settings.merging(ServiceContext.current?.postgresSettings ?? [:])
+        let settings = settings.merging(OperationContext.current.postgresSettings ?? [:])
 
         do {
             return try await client.withTransaction(logger: logger, isolation: #isolation) { connection in
