@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 // See LICENSE for license information.
 
-public import ServiceContextModule
+public import OperationContext
 
 /// Configuration parameters a ``PostgresDatabase`` applies to each transaction it begins.
 ///
@@ -16,8 +16,8 @@ public import ServiceContextModule
 /// ```
 ///
 /// Constant settings are passed to the database when it is built. Settings that differ from one
-/// call to the next, such as who is calling, are bound in the task's `ServiceContext` under
-/// ``ServiceContextModule/ServiceContext/postgresSettings`` by whatever layer establishes the caller,
+/// call to the next, such as who is calling, are bound in the task's `OperationContext` under
+/// ``OperationContext/OperationContext/postgresSettings`` by whatever layer establishes the caller,
 /// and the database reads them as each transaction begins.
 public struct PostgresSettings: Sendable, Hashable, ExpressibleByDictionaryLiteral {
     private var values: [String: String]
@@ -62,23 +62,21 @@ public struct PostgresSettings: Sendable, Hashable, ExpressibleByDictionaryLiter
     }
 }
 
-/// The `ServiceContext` key under which the settings for the current call are bound.
-public enum PostgresSettingsKey: ServiceContextKey {
+/// The `OperationContext` key under which the settings for the current call are bound.
+public enum PostgresSettingsKey: OperationContextKey {
     public typealias Value = PostgresSettings
-
-    public static let nameOverride: String? = "postgres-settings"
 }
 
-extension ServiceContext {
+extension OperationContext {
     /// The settings a ``PostgresDatabase`` applies to every transaction begun under this context,
     /// over the constant ones it was built with.
     ///
     /// Bind them where the caller becomes known:
     ///
     /// ```swift
-    /// var serviceContext = ServiceContext.current ?? .topLevel
-    /// serviceContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
-    /// return try await ServiceContext.withValue(serviceContext) {
+    /// var operationContext = OperationContext.current
+    /// operationContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
+    /// return try await OperationContext.withContext(operationContext) {
     ///     try await next(request, context)
     /// }
     /// ```

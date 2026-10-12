@@ -33,13 +33,13 @@ settings into the next caller's transaction, whatever happened to the task that 
 ## Where the tenant is bound
 
 The tenant is known where a request enters the process. That layer binds the setting into the
-task's `ServiceContext`, beside whatever identity it already binds there, and every transaction
+task's `OperationContext`, beside whatever identity it already binds there, and every transaction
 begun under that task reads it:
 
 ```swift
-var serviceContext = ServiceContext.current ?? .topLevel
-serviceContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
-return try await ServiceContext.withValue(serviceContext) {
+var operationContext = OperationContext.current
+operationContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
+return try await OperationContext.withContext(operationContext) {
     try await next(request, context)
 }
 ```

@@ -6,7 +6,7 @@ The Postgres driver for [swift-persistence](https://github.com/swift-microservic
 transactions over a `PostgresClient`, with per-transaction settings for row-level security.
 
 ```swift
-.package(url: "https://github.com/swift-microservices/swift-persistence-postgres.git", from: "0.2.1"),
+.package(url: "https://github.com/swift-microservices/swift-persistence-postgres.git", from: "0.3.0"),
 ```
 
 ```swift
@@ -52,13 +52,13 @@ the driver's types are that layer.
 gone when it ends, by commit or by rollback.
 
 Constant settings are given to the database once. Settings that differ per call, such as who is
-calling, are bound in the task's `ServiceContext` where the caller becomes known, and each
+calling, are bound in the task's `OperationContext` where the caller becomes known, and each
 transaction begun under that task reads them:
 
 ```swift
-var serviceContext = ServiceContext.current ?? .topLevel
-serviceContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
-return try await ServiceContext.withValue(serviceContext) {
+var operationContext = OperationContext.current
+operationContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
+return try await OperationContext.withContext(operationContext) {
     try await next(request, context)
 }
 ```

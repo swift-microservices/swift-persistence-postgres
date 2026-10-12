@@ -42,9 +42,9 @@ let database = PostgresDatabase<PostgresPostsScope>(
 Where the caller becomes known, its settings are bound for every transaction under that task:
 
 ```swift
-var serviceContext = ServiceContext.current ?? .topLevel
-serviceContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
-return try await ServiceContext.withValue(serviceContext) {
+var operationContext = OperationContext.current
+operationContext.postgresSettings = ["app.caller_user_id": caller.id.uuidString.lowercased()]
+return try await OperationContext.withContext(operationContext) {
     try await next(request, context)
 }
 ```
@@ -60,7 +60,7 @@ return try await ServiceContext.withValue(serviceContext) {
 
 - ``PostgresSettings``
 - ``PostgresSettingsKey``
-- ``ServiceContextModule/ServiceContext/postgresSettings``
+- ``OperationContext/OperationContext/postgresSettings``
 
 ### A client for one operation
 
