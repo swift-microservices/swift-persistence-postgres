@@ -52,32 +52,16 @@ This package is the Postgres driver for swift-persistence. Read this before chan
   there and is cut by hand.
 - Consumers pin by tag, never by branch or path.
 
-## Library CI profile
+## CI
 
-- This repository profile overrides general service CI and formatting defaults. Libraries
-  never commit `Package.resolved`; CI resolves released dependencies from the manifest.
-- PRs run documentation, formatting, compact license-header, shellcheck, and yamllint checks.
-  Automatic API-breakage checking is disabled by project choice; SemVer labels still describe
-  the public API impact. The docs workflow adds the DocC plugin only in its temporary checkout.
-- PRs and main pushes run `tests.yml`: `swift test -c release` on Swift 6.3, 6.4, and the
-  next/main snapshots, on Ubuntu Noble, beside PostgreSQL. Release mode also covers the release
-  build; the package has no `assert` or `#if DEBUG` code, so add a debug test job if it gains
-  some. PRs also run swiftlang's `swift_package_test.yml` x86_64 static Linux SDK builds.
-  CI has no scheduled runs. Require supported stable checks in branch protection; snapshot
-  failures remain visible and advisory unless maintainers explicitly require them.
-- Static SDK checks run on PRs only and cross-compile only.
-- CI is Linux-only by project choice. macOS and other Apple-platform builds/tests are
-  outside this pipeline; Linux success does not establish Apple-platform compatibility.
-- Every workflow and action is pinned to its latest release's full commit, with the release in
-  a comment. swift-nio's workflows are not used, because they download their scripts from
-  `main` at run time; only its SemVer label action remains.
-- Dependabot checks weekly, targets main, and labels workflow-update PRs `semver/none`.
-- Use the three-line MIT header matched by `.license_header_template`. Keep the tools-version
-  directive first in `Package.swift`, followed by that header. `.licenseignore` excludes the
-  manifest (the upstream checker requires a header at line one) and the plain-text `LICENSE`.
-- Database tests use a custom Linux matrix with a healthy PostgreSQL 18 service, because
-  swiftlang's `swift_package_test.yml` cannot attach one. Wait for `pg_isready` over TCP; an
-  open forwarded port or temporary Unix-only bootstrap server does not establish database
-  readiness.
-- Full Foundation linking is an upstream PostgresNIO dependency exception; retain the static
-  SDK compatibility build and use FoundationEssentials in our own code where available.
+The standard library CI from the swift-microservices delivery skill
+([library-ci.md](https://github.com/swift-microservices/skills/blob/main/skills/delivering-swift-services/references/library-ci.md)).
+Exceptions:
+
+- Tests run in `.github/workflows/tests.yml` beside a PostgreSQL 18 service, because swiftlang's
+  `swift_package_test.yml` cannot attach one: the same toolchains and flags, `swift test -c release
+  --parallel`, health-checked with `pg_isready` over TCP. Pull requests keep swiftlang's static SDK
+  builds with its tests turned off.
+- No Foundation-linking job: the one library product, `PersistencePostgres`, depends on PostgresNIO
+  1.33, which links full Foundation. Owned code uses FoundationEssentials where available. Revisit
+  when PostgresNIO no longer requires full Foundation.
