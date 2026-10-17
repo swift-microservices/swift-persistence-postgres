@@ -10,7 +10,7 @@ on:
 jobs:
   soundness:
     name: Soundness
-    uses: swiftlang/github-workflows/.github/workflows/soundness.yml@0.0.15
+    uses: swiftlang/github-workflows/.github/workflows/soundness.yml@3137ed1a48293ae9f4312fce349ed6210251db89  # 0.0.16
     with:
       api_breakage_check_enabled: false
       license_header_check_enabled: true
@@ -22,11 +22,10 @@ jobs:
 
   static-sdk:
     name: Static Linux Swift SDK
-    uses: apple/swift-nio/.github/workflows/static_sdk.yml@main
-
-  release-builds:
-    name: Release builds
-    uses: apple/swift-nio/.github/workflows/release_builds.yml@main
+    uses: swiftlang/github-workflows/.github/workflows/swift_package_test.yml@3137ed1a48293ae9f4312fce349ed6210251db89  # 0.0.16
     with:
-      minimum_swift_version: "6.3"
-      linux_6_2_enabled: false
+      enable_linux_checks: false
+      enable_linux_static_sdk_build: true
+      swift_flags: "-Xswiftc -warnings-as-errors --explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable"
+      swift_nightly_flags: "--explicit-target-dependency-import-check error -Xswiftc -require-explicit-sendable"
+      enable_windows_checks: false

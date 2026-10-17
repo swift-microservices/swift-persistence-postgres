@@ -11,10 +11,3 @@ jobs:
   tests:
     name: Tests
     uses: ./.github/workflows/tests.yml
-
-  release-builds:
-    name: Release builds
-    uses: apple/swift-nio/.github/workflows/release_builds.yml@main
-    with:
-      minimum_swift_version: "6.3"
-      linux_6_2_enabled: false
