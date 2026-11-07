@@ -6,7 +6,7 @@ The Postgres driver for [swift-persistence](https://github.com/swift-microservic
 transactions over a `PostgresClient`, with per-transaction settings for row-level security.
 
 ```swift
-.package(url: "https://github.com/swift-microservices/swift-persistence-postgres.git", from: "0.3.0"),
+.package(url: "https://github.com/swift-microservices/swift-persistence-postgres.git", from: "1.0.0"),
 ```
 
 ```swift
@@ -66,6 +66,8 @@ return try await OperationContext.withContext(operationContext) {
 A row-level security policy then reads the caller back, for reads and for writes:
 
 ```sql
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+
 CREATE POLICY posts_by_author ON posts
     USING (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid)
     WITH CHECK (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid);
@@ -73,6 +75,9 @@ CREATE POLICY posts_by_author ON posts
 
 `NULLIF` matters: once a pooled connection has carried the setting, reading it in a later
 transaction yields `''` rather than `NULL`, and `''::uuid` is an error rather than a non-match.
+
+Policies do not apply to superusers, to roles with `BYPASSRLS`, or to the table's owner unless the
+table also has `FORCE ROW LEVEL SECURITY`, so the service connects as a role that is none of these.
 
 ## A client for one operation
 
@@ -88,8 +93,8 @@ try await PostgresClient.withClient(configuration: configuration, logger: logger
 
 ## Requirements
 
-Swift 6.3, macOS 15 or Linux. PostgresNIO 1.33.1, swift-persistence 0.2. Tested against
-PostgreSQL 18.
+Swift 6.3, macOS 15 or Linux. PostgresNIO 1.33.1, swift-persistence 1.0, swift-operation-context
+1.0. Tested against PostgreSQL 18.
 
 ## Development
 
@@ -98,8 +103,8 @@ The database tests run against a real Postgres named by `POSTGRES_HOST`, `POSTGR
 a driver test with no database proves nothing. `scripts/test.sh` provides one.
 
 ```sh
-scripts/test.sh                                          # starts an ephemeral Postgres, runs swift test, stops it
-swift-format lint --strict --recursive Sources Tests    # what the soundness check runs
+scripts/test.sh                                                      # starts an ephemeral Postgres, runs swift test, stops it
+swift-format lint --strict --recursive Package.swift Sources Tests  # what the soundness check runs
 ```
 
 ## Contributing

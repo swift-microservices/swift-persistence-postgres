@@ -9,6 +9,8 @@ statement sees and writes, and the policy can read the tenant from a configurati
 with `current_setting`, in both `USING` and `WITH CHECK`:
 
 ```sql
+ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
+
 CREATE POLICY posts_by_author ON posts
     USING (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid)
     WITH CHECK (author_id = NULLIF(current_setting('app.caller_user_id', true), '')::uuid);
@@ -16,6 +18,10 @@ CREATE POLICY posts_by_author ON posts
 
 `NULLIF` matters: once a pooled connection has carried the setting, reading it in a later
 transaction yields `''` rather than `NULL`, and `''::uuid` is an error rather than a non-match.
+
+A policy takes effect only on a table with row-level security enabled, as above, and never for a
+superuser, a role with `BYPASSRLS`, or the table's owner unless the table also has
+`FORCE ROW LEVEL SECURITY`. The service therefore connects as a role that is none of these.
 
 That is all a policy should decide. Whether a caller is an administrator, and what they may do,
 is a rule about the application and belongs in the use case, never in a policy: a policy that

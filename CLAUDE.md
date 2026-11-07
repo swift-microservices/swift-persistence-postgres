@@ -58,10 +58,12 @@ The standard library CI from the swift-microservices-architect skill
 ([A library's CI workflows](https://github.com/swift-microservices/swift-microservices-architect-skill/blob/main/skills/swift-microservices-architect/references/delivery.md#a-librarys-ci-workflows)).
 Exceptions:
 
-- Tests run in `.github/workflows/tests.yml` beside a PostgreSQL 18 service, because swiftlang's
-  `swift_package_test.yml` cannot attach one: the same toolchains and flags, `swift test -c release
-  --parallel`, health-checked with `pg_isready` over TCP. Pull requests keep swiftlang's static SDK
-  builds with its tests turned off.
-- No Foundation-linking job: the one library product, `PersistencePostgres`, depends on PostgresNIO
-  1.33, which links full Foundation. Owned code uses FoundationEssentials where available. Revisit
-  when PostgresNIO no longer requires full Foundation.
+- `postgres_image: postgres:18-alpine` runs the tests in the ci repository's `tests.yml` beside a
+  PostgreSQL 18 service, health-checked with `pg_isready`, because swiftlang's
+  `swift_package_test.yml` cannot attach one: the same toolchains and flags, `swift test -c
+  release`. The static Linux SDK build still runs through swiftlang's workflow with its tests
+  turned off.
+- The Foundation linking check skips `PersistencePostgres`
+  (`foundation_linking_check_excluded_products`): it depends on PostgresNIO 1.33, which links full
+  Foundation. Owned code uses FoundationEssentials where available. Remove the exclusion when
+  PostgresNIO no longer requires full Foundation.
